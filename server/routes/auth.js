@@ -1,6 +1,7 @@
 const router = require('express').Router();
 const jwt = require('jsonwebtoken');
 const User = require('../models/User');
+const { protect } = require('../middleware/auth');
 
 const makeToken = (id) =>
   jwt.sign({ id }, process.env.JWT_SECRET, { expiresIn: '7d' });
@@ -48,5 +49,9 @@ router.post('/login', async (req, res) => {
   } catch (err) {
     res.status(500).json({ message: err.message });
   }
+});
+// GET /api/auth/me  (protected)
+router.get('/me', protect, (req, res) => {
+  res.json({ _id: req.user._id, name: req.user.name, email: req.user.email });
 });
 module.exports = router;
