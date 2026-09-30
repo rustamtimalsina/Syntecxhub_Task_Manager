@@ -1,0 +1,15 @@
+body { font-family: system-ui, sans-serif; background: #f4f5f2; color: #1c2321; margin: 0; }
+.page { max-width: 720px; margin: 0 auto; padding: 24px 16px 64px; }
+.top { display: flex; justify-content: space-between; align-items: center; }
+.box { background: #fff; border: 1px solid #dfe3df; border-radius: 10px; padding: 16px; display: grid; gap: 10px; margin: 16px 0; }
+.row { display: flex; gap: 8px; flex-wrap: wrap; align-items: center; }
+input, select, textarea, button { font: inherit; padding: 8px 10px; border: 1px solid #ccd2cd; border-radius: 6px; }
+button { cursor: pointer; background: #1f5f4a; color: #fff; border: none; }
+.filters button { background: #fff; color: #1c2321; border: 1px solid #ccd2cd; }
+.filters button.on { background: #1c2321; color: #fff; }
+.task { display: flex; justify-content: space-between; gap: 12px; flex-wrap: wrap; background: #fff; border: 1px solid #dfe3df; border-left: 4px solid #b58900; border-radius: 8px; padding: 12px 14px; margin-bottom: 8px; }
+.task.high { border-left-color: #c2410c; }
+.task.low { border-left-color: #3b7a57; }
+.task.done h3 { text-decoration: line-through; color: #888; }
+.task h3, .task p { margin: 0 0 4px; }
+.error { color: crimson; margin: 0; }
