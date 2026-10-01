@@ -24,17 +24,34 @@ export default function Auth({ mode }) {
   };
 
   return (
-    <form onSubmit={submit} style={{ maxWidth: 340, margin: '80px auto', display: 'grid', gap: 12 }}>
-      <h1>{isLogin ? 'Log in' : 'Create account'}</h1>
-      {error && <p style={{ color: 'crimson' }}>{error}</p>}
-      {!isLogin && <input placeholder="Name" value={form.name} onChange={set('name')} />}
-      <input placeholder="Email" type="email" value={form.email} onChange={set('email')} />
-      <input placeholder="Password" type="password" value={form.password} onChange={set('password')} />
-      <button>{isLogin ? 'Log in' : 'Register'}</button>
-      <p>
-        {isLogin ? 'New here? ' : 'Have an account? '}
-        <Link to={isLogin ? '/register' : '/login'}>{isLogin ? 'Register' : 'Log in'}</Link>
-      </p>
-    </form>
+    <main className="auth">
+      <section className="auth-art">
+        <div className="brand">Lanes</div>
+        <h2 className="art-title">Get it out of your head.</h2>
+        <div className="slips" aria-hidden="true">
+          <div className="slip s1">Ship the API<small>High priority</small></div>
+          <div className="slip s2">Design the dashboard<small>Due Friday</small></div>
+          <div className="slip s3">Write the README<small>Done</small></div>
+        </div>
+      </section>
+
+      <section className="auth-side">
+        <form className="auth-card" onSubmit={submit}>
+          <h1>{isLogin ? 'Welcome back' : 'Create your account'}</h1>
+          <p className="muted">{isLogin ? 'Log in to see your lanes.' : 'Start sorting your tasks into lanes.'}</p>
+          {error && <p className="alert">{error}</p>}
+          {!isLogin && (
+            <label>Name<input value={form.name} onChange={set('name')} /></label>
+          )}
+          <label>Email<input type="email" value={form.email} onChange={set('email')} /></label>
+          <label>Password<input type="password" value={form.password} onChange={set('password')} /></label>
+          <button className="btn-main">{isLogin ? 'Log in' : 'Create account'}</button>
+          <p className="muted">
+            {isLogin ? 'New here? ' : 'Already have an account? '}
+            <Link to={isLogin ? '/register' : '/login'}>{isLogin ? 'Create an account' : 'Log in'}</Link>
+          </p>
+        </form>
+      </section>
+    </main>
   );
 }

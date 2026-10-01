@@ -1,16 +1,21 @@
 import { useEffect, useState } from 'react';
+import { DragDropContext, Droppable, Draggable } from '@hello-pangea/dnd';
 import api from '../api';
 import { useAuth } from '../AuthContext.jsx';
 
 const EMPTY = { title: '', description: '', status: 'todo', priority: 'medium', dueDate: '' };
-const STATUS = { todo: 'To do', 'in-progress': 'In progress', done: 'Done' };
+const LANES = [
+  { key: 'todo', label: 'To do' },
+  { key: 'in-progress', label: 'In progress' },
+  { key: 'done', label: 'Done' },
+];
 
 export default function Dashboard() {
   const { user, logout } = useAuth();
   const [tasks, setTasks] = useState([]);
   const [form, setForm] = useState(EMPTY);
   const [editingId, setEditingId] = useState(null);
-  const [filter, setFilter] = useState('all');
+  const [showForm, setShowForm] = useState(false);
   const [error, setError] = useState('');
 
   useEffect(() => {
@@ -18,6 +23,32 @@ export default function Dashboard() {
   }, []);
 
   const set = (key) => (e) => setForm({ ...form, [key]: e.target.value });
+
+  const closeForm = () => {
+    setShowForm(false);
+    setEditingId(null);
+    setForm(EMPTY);
+    setError('');
+  };
+
+  const openNew = () => {
+    setEditingId(null);
+    setForm(EMPTY);
+    setShowForm(true);
+  };
+
+  const edit = (t) => {
+    setEditingId(t._id);
+    setForm({
+      title: t.title,
+      description: t.description || '',
+      status: t.status,
+      priority: t.priority,
+      dueDate: t.dueDate ? t.dueDate.slice(0, 10) : '',
+    });
+    setShowForm(true);
+    window.scrollTo({ top: 0, behavior: 'smooth' });
+  };
 
   const submit = async (e) => {
     e.preventDefault();
@@ -32,27 +63,42 @@ export default function Dashboard() {
         const { data } = await api.post('/tasks', body);
         setTasks([data, ...tasks]);
       }
-      setForm(EMPTY);
-      setEditingId(null);
+      closeForm();
     } catch (err) {
       setError(err.response?.data?.message || 'Something went wrong');
     }
   };
 
-  const edit = (t) => {
-    setEditingId(t._id);
-    setForm({
-      title: t.title,
-      description: t.description || '',
-      status: t.status,
-      priority: t.priority,
-      dueDate: t.dueDate ? t.dueDate.slice(0, 10) : '',
-    });
+  // Moves a task to another lane. The screen updates first, then the server;
+  // if the server fails, the old state comes back.
+  const updateStatus = async (task, status) => {
+    const before = tasks;
+    setTasks(tasks.map((t) => (t._id === task._id ? { ...t, status } : t)));
+    try {
+      await api.put(`/tasks/${task._id}`, {
+        title: task.title,
+        description: task.description,
+        priority: task.priority,
+        dueDate: task.dueDate,
+        status,
+      });
+    } catch {
+      setTasks(before);
+    }
   };
 
-  const changeStatus = async (t, status) => {
-    const { data } = await api.put(`/tasks/${t._id}`, { ...t, status });
-    setTasks(tasks.map((x) => (x._id === t._id ? data : x)));
+  const move = (t, direction) => {
+    const index = LANES.findIndex((l) => l.key === t.status) + direction;
+    if (index < 0 || index >= LANES.length) return;
+    updateStatus(t, LANES[index].key);
+  };
+
+  const onDragEnd = (result) => {
+    const { destination, draggableId } = result;
+    if (!destination) return; // dropped outside any lane
+    const task = tasks.find((t) => t._id === draggableId);
+    if (!task || task.status === destination.droppableId) return;
+    updateStatus(task, destination.droppableId);
   };
 
   const remove = async (t) => {
@@ -61,69 +107,124 @@ export default function Dashboard() {
     setTasks(tasks.filter((x) => x._id !== t._id));
   };
 
-  const visible = filter === 'all' ? tasks : tasks.filter((t) => t.status === filter);
+  const today = new Date(new Date().toDateString());
+  const isOverdue = (t) => t.dueDate && t.status !== 'done' && new Date(t.dueDate) < today;
+  const overdueCount = tasks.filter(isOverdue).length;
+  const doneCount = tasks.filter((t) => t.status === 'done').length;
 
   return (
-    <div className="page">
-      <header className="top">
-        <h1>Tasks</h1>
-        <div>
-          {user.name} <button onClick={logout}>Log out</button>
+    <>
+      <header className="app-top">
+        <div className="brand">Lanes</div>
+        <div className="who">
+          <span>{user.name}</span>
+          <button className="chip-btn" onClick={logout}>Log out</button>
         </div>
       </header>
 
-      <form className="box" onSubmit={submit}>
-        <h2>{editingId ? 'Edit task' : 'New task'}</h2>
-        {error && <p className="error">{error}</p>}
-        <input placeholder="Title" value={form.title} onChange={set('title')} />
-        <textarea placeholder="Notes" rows={2} value={form.description} onChange={set('description')} />
-        <div className="row">
-          <select value={form.status} onChange={set('status')}>
-            {Object.entries(STATUS).map(([v, l]) => <option key={v} value={v}>{l}</option>)}
-          </select>
-          <select value={form.priority} onChange={set('priority')}>
-            <option value="low">Low priority</option>
-            <option value="medium">Medium priority</option>
-            <option value="high">High priority</option>
-          </select>
-          <input type="date" value={form.dueDate} onChange={set('dueDate')} />
-        </div>
-        <div className="row">
-          <button>{editingId ? 'Save changes' : 'Add task'}</button>
-          {editingId && (
-            <button type="button" onClick={() => { setEditingId(null); setForm(EMPTY); }}>Cancel</button>
-          )}
-        </div>
-      </form>
-
-      <div className="row filters">
-        {['all', 'todo', 'in-progress', 'done'].map((f) => (
-          <button key={f} className={filter === f ? 'on' : ''} onClick={() => setFilter(f)}>
-            {f === 'all' ? 'All' : STATUS[f]}
-          </button>
-        ))}
-      </div>
-
-      {visible.length === 0 && <p>No tasks here yet.</p>}
-
-      {visible.map((t) => (
-        <div key={t._id} className={`task ${t.priority} ${t.status === 'done' ? 'done' : ''}`}>
+      <div className="wrap">
+        <div className="hero">
           <div>
-            <h3>{t.title}</h3>
-            {t.description && <p>{t.description}</p>}
-            <small>
-              {t.priority} priority{t.dueDate && ` · due ${new Date(t.dueDate).toLocaleDateString()}`}
-            </small>
+            <h1>Your lanes</h1>
+            <div className="stats">
+              <span className="stat"><b>{tasks.length}</b>total</span>
+              <span className="stat"><b>{doneCount}</b>done</span>
+              <span className={`stat ${overdueCount ? 'warn' : ''}`}><b>{overdueCount}</b>overdue</span>
+            </div>
           </div>
-          <div className="row">
-            <select value={t.status} onChange={(e) => changeStatus(t, e.target.value)}>
-              {Object.entries(STATUS).map(([v, l]) => <option key={v} value={v}>{l}</option>)}
-            </select>
-            <button onClick={() => edit(t)}>Edit</button>
-            <button onClick={() => remove(t)}>Delete</button>
-          </div>
+          {!showForm && <button className="btn-main" onClick={openNew}>+ New task</button>}
         </div>
-      ))}
-    </div>
+
+        {showForm && (
+          <form className="composer" onSubmit={submit}>
+            <h2>{editingId ? 'Edit task' : 'New task'}</h2>
+            {error && <p className="form-error">{error}</p>}
+            <label>Title<input value={form.title} onChange={set('title')} maxLength={120} /></label>
+            <label>Notes<textarea rows={2} value={form.description} onChange={set('description')} /></label>
+            <div className="form-row">
+              <label>Lane
+                <select value={form.status} onChange={set('status')}>
+                  {LANES.map((l) => <option key={l.key} value={l.key}>{l.label}</option>)}
+                </select>
+              </label>
+              <label>Priority
+                <select value={form.priority} onChange={set('priority')}>
+                  <option value="low">Low</option>
+                  <option value="medium">Medium</option>
+                  <option value="high">High</option>
+                </select>
+              </label>
+              <label>Due date<input type="date" value={form.dueDate} onChange={set('dueDate')} /></label>
+            </div>
+            <div className="form-actions">
+              <button className="btn-main">{editingId ? 'Save changes' : 'Add task'}</button>
+              <button type="button" className="btn-plain" onClick={closeForm}>Cancel</button>
+            </div>
+          </form>
+        )}
+
+        <DragDropContext onDragEnd={onDragEnd}>
+          <div className="lanes">
+            {LANES.map((lane, laneIndex) => {
+              const items = tasks.filter((t) => t.status === lane.key);
+              return (
+                <section key={lane.key} className={`lane ${lane.key}`}>
+                  <div className="lane-head">
+                    <h2>{lane.label}</h2>
+                    <span className="count">{items.length}</span>
+                  </div>
+
+                  <Droppable droppableId={lane.key}>
+                    {(drop, dropSnap) => (
+                      <div
+                        ref={drop.innerRef}
+                        {...drop.droppableProps}
+                        className={`drop-zone ${dropSnap.isDraggingOver ? 'over' : ''}`}
+                      >
+                        {items.length === 0 && !dropSnap.isDraggingOver && (
+                          <div className="lane-empty">Drop a task here</div>
+                        )}
+
+                        {items.map((t, index) => (
+                          <Draggable key={t._id} draggableId={t._id} index={index}>
+                            {(drag, dragSnap) => (
+                              <article
+                                ref={drag.innerRef}
+                                {...drag.draggableProps}
+                                {...drag.dragHandleProps}
+                                className={`card ${t.priority} ${t.status === 'done' ? 'finished' : ''} ${dragSnap.isDragging ? 'dragging' : ''}`}
+                              >
+                                <h3>{t.title}</h3>
+                                {t.description && <p>{t.description}</p>}
+                                <div className="tags">
+                                  <span className="tag">{t.priority}</span>
+                                  {t.dueDate && (
+                                    <span className={`tag ${isOverdue(t) ? 'late' : ''}`}>
+                                      {isOverdue(t) ? 'Overdue · ' : 'Due '}
+                                      {new Date(t.dueDate).toLocaleDateString()}
+                                    </span>
+                                  )}
+                                </div>
+                                <div className="card-actions">
+                                  {laneIndex > 0 && <button className="mini" onClick={() => move(t, -1)}>←</button>}
+                                  {laneIndex < LANES.length - 1 && <button className="mini" onClick={() => move(t, 1)}>→</button>}
+                                  <button className="mini" onClick={() => edit(t)}>Edit</button>
+                                  <button className="mini del" onClick={() => remove(t)}>Delete</button>
+                                </div>
+                              </article>
+                            )}
+                          </Draggable>
+                        ))}
+                        {drop.placeholder}
+                      </div>
+                    )}
+                  </Droppable>
+                </section>
+              );
+            })}
+          </div>
+        </DragDropContext>
+      </div>
+    </>
   );
 }
