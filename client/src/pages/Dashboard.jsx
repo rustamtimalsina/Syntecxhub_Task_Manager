@@ -2,6 +2,7 @@ import { useEffect, useState } from 'react';
 import { DragDropContext, Droppable, Draggable } from '@hello-pangea/dnd';
 import api from '../api';
 import { useAuth } from '../AuthContext.jsx';
+import toast from 'react-hot-toast';
 
 const EMPTY = { title: '', description: '', status: 'todo', priority: 'medium', dueDate: '' };
 const LANES = [
@@ -20,10 +21,19 @@ export default function Dashboard() {
   const [search, setSearch] = useState('');
 const [priorityFilter, setPriorityFilter] = useState('all');
 const [sortBy, setSortBy] = useState('newest');
+const [loading, setLoading] = useState(true);
+const [loadError, setLoadError] = useState(false);
 
-  useEffect(() => {
-    api.get('/tasks').then((res) => setTasks(res.data));
-  }, []);
+ const load = () => {
+  setLoading(true);
+  setLoadError(false);
+  api.get('/tasks')
+    .then((res) => setTasks(res.data))
+    .catch(() => setLoadError(true))
+    .finally(() => setLoading(false));
+};
+
+useEffect(load, []);
 
   const set = (key) => (e) => setForm({ ...form, [key]: e.target.value });
 
@@ -53,42 +63,46 @@ const [sortBy, setSortBy] = useState('newest');
     window.scrollTo({ top: 0, behavior: 'smooth' });
   };
 
-  const submit = async (e) => {
-    e.preventDefault();
-    setError('');
-    if (!form.title.trim()) return setError('Give the task a title.');
-    const body = { ...form, dueDate: form.dueDate || null };
-    try {
-      if (editingId) {
-        const { data } = await api.put(`/tasks/${editingId}`, body);
-        setTasks(tasks.map((t) => (t._id === editingId ? data : t)));
-      } else {
-        const { data } = await api.post('/tasks', body);
-        setTasks([data, ...tasks]);
-      }
-      closeForm();
-    } catch (err) {
-      setError(err.response?.data?.message || 'Something went wrong');
+ const submit = async (e) => {
+  e.preventDefault();
+  setError('');
+  if (!form.title.trim()) return setError('Give the task a title.');
+  const body = { ...form, dueDate: form.dueDate || null };
+  try {
+    if (editingId) {
+      const { data } = await api.put(`/tasks/${editingId}`, body);
+      setTasks(tasks.map((t) => (t._id === editingId ? data : t)));
+      toast.success('Task updated');
+    } else {
+      const { data } = await api.post('/tasks', body);
+      setTasks([data, ...tasks]);
+      toast.success('Task added');
     }
-  };
+    closeForm();
+  } catch (err) {
+    setError(err.response?.data?.message || 'Something went wrong');
+  }
+};
 
   // Moves a task to another lane. The screen updates first, then the server;
   // if the server fails, the old state comes back.
   const updateStatus = async (task, status) => {
-    const before = tasks;
-    setTasks(tasks.map((t) => (t._id === task._id ? { ...t, status } : t)));
-    try {
-      await api.put(`/tasks/${task._id}`, {
-        title: task.title,
-        description: task.description,
-        priority: task.priority,
-        dueDate: task.dueDate,
-        status,
-      });
-    } catch {
-      setTasks(before);
-    }
-  };
+  const before = tasks;
+  setTasks(tasks.map((t) => (t._id === task._id ? { ...t, status } : t)));
+  try {
+    await api.put(`/tasks/${task._id}`, {
+      title: task.title,
+      description: task.description,
+      priority: task.priority,
+      dueDate: task.dueDate,
+      status,
+    });
+    toast.success(`Moved to ${LANES.find((l) => l.key === status).label}`);
+  } catch {
+    setTasks(before);
+    toast.error("Couldn't move the task. Try again.");
+  }
+};
 
   const move = (t, direction) => {
     const index = LANES.findIndex((l) => l.key === t.status) + direction;
@@ -104,11 +118,16 @@ const [sortBy, setSortBy] = useState('newest');
     updateStatus(task, destination.droppableId);
   };
 
-  const remove = async (t) => {
-    if (!window.confirm(`Delete "${t.title}"?`)) return;
+ const remove = async (t) => {
+  if (!window.confirm(`Delete "${t.title}"?`)) return;
+  try {
     await api.delete(`/tasks/${t._id}`);
     setTasks(tasks.filter((x) => x._id !== t._id));
-  };
+    toast.success('Task deleted');
+  } catch {
+    toast.error("Couldn't delete the task. Try again.");
+  }
+};
 
   const today = new Date(new Date().toDateString());
   const isOverdue = (t) => t.dueDate && t.status !== 'done' && new Date(t.dueDate) < today;
@@ -178,6 +197,12 @@ const visibleTasks = tasks
             </div>
           </form>
         )}
+        {loading && <div className="state">Loading your tasks…</div>}
+{loadError && (
+  <div className="state error-state">
+    Couldn't load your tasks. <button className="mini" onClick={load}>Retry</button>
+  </div>
+)}
         <div className="toolbar">
   <input
     className="search"

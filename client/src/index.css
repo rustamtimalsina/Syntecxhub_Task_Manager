@@ -102,3 +102,7 @@ h1, h2, h3 { font-family: 'Syne', sans-serif; letter-spacing: -0.02em; }
 .toolbar input, .toolbar select { padding: 10px 12px; border: 2px solid var(--ink); border-radius: 4px; background: #fff; color: var(--ink); font: inherit; }
 .toolbar input:focus, .toolbar select:focus { outline: 3px solid var(--sun); outline-offset: 0; }
 .toolbar .search { flex: 1; min-width: 200px; }
+/* ---------- States ---------- */
+.state { padding: 14px; border: 2px dashed var(--muted); border-radius: 4px; margin-bottom: 18px; font-weight: 600; }
+.error-state { border-color: var(--coral); color: var(--coral); }
+button:disabled { opacity: 0.6; cursor: wait; }

@@ -8,20 +8,27 @@ export default function Auth({ mode }) {
   const navigate = useNavigate();
   const [form, setForm] = useState({ name: '', email: '', password: '' });
   const [error, setError] = useState('');
+  const [loading, setLoading] = useState(false);
 
   const set = (key) => (e) => setForm({ ...form, [key]: e.target.value });
 
   const submit = async (e) => {
-    e.preventDefault();
-    setError('');
-    try {
-      if (isLogin) await login(form.email, form.password);
-      else await register(form.name, form.email, form.password);
-      navigate('/');
-    } catch (err) {
-      setError(err.response?.data?.message || 'Something went wrong');
-    }
-  };
+  e.preventDefault();
+  setError('');
+  if (!isLogin && !form.name.trim()) return setError('Enter your name.');
+  if (!/^\S+@\S+\.\S+$/.test(form.email)) return setError('Enter a valid email address.');
+  if (form.password.length < 6) return setError('Password must be at least 6 characters.');
+  setLoading(true);
+  try {
+    if (isLogin) await login(form.email, form.password);
+    else await register(form.name, form.email, form.password);
+    navigate('/');
+  } catch (err) {
+    setError(err.response?.data?.message || 'Something went wrong');
+  } finally {
+    setLoading(false);
+  }
+};
 
   return (
     <main className="auth">
@@ -45,7 +52,9 @@ export default function Auth({ mode }) {
           )}
           <label>Email<input type="email" value={form.email} onChange={set('email')} /></label>
           <label>Password<input type="password" value={form.password} onChange={set('password')} /></label>
-          <button className="btn-main">{isLogin ? 'Log in' : 'Create account'}</button>
+          <button className="btn-main" disabled={loading}>
+  {loading ? 'Please wait…' : isLogin ? 'Log in' : 'Create account'}
+</button>
           <p className="muted">
             {isLogin ? 'New here? ' : 'Already have an account? '}
             <Link to={isLogin ? '/register' : '/login'}>{isLogin ? 'Create an account' : 'Log in'}</Link>
