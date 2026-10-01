@@ -3,6 +3,7 @@ import { DragDropContext, Droppable, Draggable } from '@hello-pangea/dnd';
 import api from '../api';
 import { useAuth } from '../AuthContext.jsx';
 import toast from 'react-hot-toast';
+import ThemeToggle from '../ThemeToggle.jsx';
 
 const EMPTY = { title: '', description: '', status: 'todo', priority: 'medium', dueDate: '' };
 const LANES = [
@@ -152,9 +153,10 @@ const visibleTasks = tasks
       <header className="app-top">
         <div className="brand">Lanes</div>
         <div className="who">
-          <span>{user.name}</span>
-          <button className="chip-btn" onClick={logout}>Log out</button>
-        </div>
+  <ThemeToggle />
+  <span>{user.name}</span>
+  <button className="chip-btn" onClick={logout}>Log out</button>
+</div>
       </header>
 
       <div className="wrap">

@@ -106,3 +106,37 @@ h1, h2, h3 { font-family: 'Syne', sans-serif; letter-spacing: -0.02em; }
 .state { padding: 14px; border: 2px dashed var(--muted); border-radius: 4px; margin-bottom: 18px; font-weight: 600; }
 .error-state { border-color: var(--coral); color: var(--coral); }
 button:disabled { opacity: 0.6; cursor: wait; }
+/* ---------- Dark mode ---------- */
+.theme-float { position: fixed; top: 16px; right: 16px; padding: 6px 12px; z-index: 5; }
+
+[data-theme='dark'] {
+  color-scheme: dark;
+  --ink: #ececff;    /* text, borders and shadows turn light */
+  --mist: #11112b;   /* page background */
+  --muted: #9a9cc8;
+}
+
+/* Surfaces that were white */
+[data-theme='dark'] .slip,
+[data-theme='dark'] .auth input,
+[data-theme='dark'] .auth .alert,
+[data-theme='dark'] .stat,
+[data-theme='dark'] .composer,
+[data-theme='dark'] .composer input,
+[data-theme='dark'] .composer select,
+[data-theme='dark'] .composer textarea,
+[data-theme='dark'] .toolbar input,
+[data-theme='dark'] .toolbar select,
+[data-theme='dark'] .btn-plain,
+[data-theme='dark'] .card,
+[data-theme='dark'] .mini { background: #1c1c3f; }
+
+[data-theme='dark'] .lane { background: #181838; }
+[data-theme='dark'] .app-top { background: #070718; }
+
+/* Places where ink was used as a background or as text on yellow */
+[data-theme='dark'] .count { background: var(--ink); color: #11112b; }
+[data-theme='dark'] .btn-main,
+[data-theme='dark'] .auth .btn-main,
+[data-theme='dark'] .mini:hover,
+[data-theme='dark'] .chip-btn:hover { color: #0f0f2e; }

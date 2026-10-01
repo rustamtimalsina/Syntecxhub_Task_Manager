@@ -1,6 +1,7 @@
 import { useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { useAuth } from '../AuthContext.jsx';
+import ThemeToggle from '../ThemeToggle.jsx';
 
 export default function Auth({ mode }) {
   const isLogin = mode === 'login';
@@ -43,6 +44,7 @@ export default function Auth({ mode }) {
       </section>
 
       <section className="auth-side">
+        <ThemeToggle className="btn-plain theme-float" />
         <form className="auth-card" onSubmit={submit}>
           <h1>{isLogin ? 'Welcome back' : 'Create your account'}</h1>
           <p className="muted">{isLogin ? 'Log in to see your lanes.' : 'Start sorting your tasks into lanes.'}</p>
