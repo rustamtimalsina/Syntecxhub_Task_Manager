@@ -97,3 +97,8 @@ h1, h2, h3 { font-family: 'Syne', sans-serif; letter-spacing: -0.02em; }
 .drop-zone.over { background: rgba(53, 53, 243, 0.12); outline: 2px dashed var(--blue); outline-offset: -2px; }
 .card { cursor: grab; }
 .card.dragging { cursor: grabbing; box-shadow: 8px 8px 0 var(--blue); }
+/* ---------- Toolbar ---------- */
+.toolbar { display: flex; gap: 10px; flex-wrap: wrap; margin-bottom: 18px; }
+.toolbar input, .toolbar select { padding: 10px 12px; border: 2px solid var(--ink); border-radius: 4px; background: #fff; color: var(--ink); font: inherit; }
+.toolbar input:focus, .toolbar select:focus { outline: 3px solid var(--sun); outline-offset: 0; }
+.toolbar .search { flex: 1; min-width: 200px; }

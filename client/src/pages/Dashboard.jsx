@@ -17,6 +17,9 @@ export default function Dashboard() {
   const [editingId, setEditingId] = useState(null);
   const [showForm, setShowForm] = useState(false);
   const [error, setError] = useState('');
+  const [search, setSearch] = useState('');
+const [priorityFilter, setPriorityFilter] = useState('all');
+const [sortBy, setSortBy] = useState('newest');
 
   useEffect(() => {
     api.get('/tasks').then((res) => setTasks(res.data));
@@ -111,7 +114,20 @@ export default function Dashboard() {
   const isOverdue = (t) => t.dueDate && t.status !== 'done' && new Date(t.dueDate) < today;
   const overdueCount = tasks.filter(isOverdue).length;
   const doneCount = tasks.filter((t) => t.status === 'done').length;
-
+const PRIORITY_ORDER = { high: 0, medium: 1, low: 2 };
+const q = search.trim().toLowerCase();
+const visibleTasks = tasks
+  .filter((t) => !q || t.title.toLowerCase().includes(q) || (t.description || '').toLowerCase().includes(q))
+  .filter((t) => priorityFilter === 'all' || t.priority === priorityFilter)
+  .sort((a, b) => {
+    if (sortBy === 'due') {
+      if (!a.dueDate) return 1;
+      if (!b.dueDate) return -1;
+      return new Date(a.dueDate) - new Date(b.dueDate);
+    }
+    if (sortBy === 'priority') return PRIORITY_ORDER[a.priority] - PRIORITY_ORDER[b.priority];
+    return new Date(b.createdAt) - new Date(a.createdAt);
+  });
   return (
     <>
       <header className="app-top">
@@ -162,11 +178,30 @@ export default function Dashboard() {
             </div>
           </form>
         )}
+        <div className="toolbar">
+  <input
+    className="search"
+    placeholder="Search tasks…"
+    value={search}
+    onChange={(e) => setSearch(e.target.value)}
+  />
+  <select value={priorityFilter} onChange={(e) => setPriorityFilter(e.target.value)}>
+    <option value="all">All priorities</option>
+    <option value="high">High</option>
+    <option value="medium">Medium</option>
+    <option value="low">Low</option>
+  </select>
+  <select value={sortBy} onChange={(e) => setSortBy(e.target.value)}>
+    <option value="newest">Newest first</option>
+    <option value="due">Due date</option>
+    <option value="priority">Priority</option>
+  </select>
+</div>
 
         <DragDropContext onDragEnd={onDragEnd}>
           <div className="lanes">
             {LANES.map((lane, laneIndex) => {
-              const items = tasks.filter((t) => t.status === lane.key);
+              const items = visibleTasks.filter((t) => t.status === lane.key);
               return (
                 <section key={lane.key} className={`lane ${lane.key}`}>
                   <div className="lane-head">
