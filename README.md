@@ -12,6 +12,7 @@ A full-stack task manager built with the MERN stack. Users register, log in, and
 ![Login](screenshots/login.png)
 ![Dashboard](screenshots/dashboard.png)
 ![Dark mode](screenshots/dashboard-dark.png)
+![MongoDB](screenshots/mongodb.png)
 
 ## Features
 
